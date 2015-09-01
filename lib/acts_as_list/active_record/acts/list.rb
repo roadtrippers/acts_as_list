@@ -104,6 +104,8 @@ module ActiveRecord
               @position_changed = true
             end
 
+            attr_accessor :skip_positioning
+
             #{scope_methods}
 
             # only add to attr_accessible
@@ -113,17 +115,17 @@ module ActiveRecord
               attr_accessible :#{configuration[:column]}
             end
 
-            before_destroy :reload_position
-            after_destroy :decrement_positions_on_lower_items
-            before_update :check_scope
-            after_update :update_positions
-            before_validation :check_top_position
+            before_destroy :reload_position, unless: :skip_positioning
+            after_destroy :decrement_positions_on_lower_items, unless: :skip_positioning
+            before_update :check_scope, unless: :skip_positioning
+            after_update :update_positions, unless: :skip_positioning
+            before_validation :check_top_position, unless: :skip_positioning
 
             scope :in_list, lambda { where("#{table_name}.#{configuration[:column]} IS NOT NULL") }
           EOV
 
           if configuration[:add_new_at].present?
-            self.send(:before_create, "add_to_list_#{configuration[:add_new_at]}")
+            self.send(:before_create, "add_to_list_#{configuration[:add_new_at]}", unless: :skip_positioning)
           end
 
         end

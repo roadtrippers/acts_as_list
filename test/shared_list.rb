@@ -214,15 +214,28 @@ module Shared
       assert_equal 3, ListMixin.where(id: 4).first.pos
     end
 
+    def test_skip_positioning_skips_callbacks_on_destroy
+      assert_equal [1, 2, 3, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+
+      new = ListMixin.new(parent_id: 5)
+      new.pos = 3
+      new.skip_positioning = true
+      new.save!
+      assert_equal(3, new.pos)
+
+      assert_equal [1, 2, 3, 5, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+      assert_equal [3, 5], ListMixin.where(parent_id: 5, pos: 3).order('id').map(&:id)
+    end
+
     def test_before_create_callback_adds_to_bottom
       assert_equal [1, 2, 3, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
 
-      new = ListMixin.create(parent_id: 5)
-      assert_equal 5, new.pos
-      assert !new.first?
-      assert new.last?
+      list = ListMixin.find(3)
+      list.skip_positioning = true
+      list.destroy
 
-      assert_equal [1, 2, 3, 4, 5], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+      assert_equal [1, 2, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+      assert_equal [1, 2, 4], ListMixin.where(parent_id: 5).order('pos').map(&:pos)
     end
 
     def test_before_create_callback_adds_to_given_position
@@ -245,6 +258,19 @@ module Shared
       assert !new.last?
 
       assert_equal [5, 1, 6, 2, 3, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+    end
+
+    def test_skip_positioning_skips_callbacks_on_create
+      assert_equal [1, 2, 3, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+
+      new = ListMixin.new(parent_id: 5)
+      new.pos = 3
+      new.skip_positioning = true
+      new.save!
+      assert_equal(3, new.pos)
+
+      assert_equal [1, 2, 3, 5, 4], ListMixin.where(parent_id: 5).order('pos').map(&:id)
+      assert_equal [3, 5], ListMixin.where(parent_id: 5, pos: 3).order('id').map(&:id)
     end
   end
 end
