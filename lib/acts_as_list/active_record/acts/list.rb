@@ -432,7 +432,7 @@ module ActiveRecord
           end
 
           def update_positions
-            old_position = send("#{position_column}_was").to_i
+            old_position = send("#{position_column}_before_last_save").to_i
             new_position = send(position_column).to_i
 
             return unless acts_as_list_list.where(
